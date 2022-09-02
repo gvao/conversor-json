@@ -1,5 +1,5 @@
 const $originalFile = document.querySelector("#originalFile");
-const $downloas_csv = document.querySelector("#downloas_csv");
+const ancor = document.querySelector("#downloas_csv");
 
 function readJson(file, callback) {
   const reader = new FileReader();
@@ -13,128 +13,76 @@ function readJson(file, callback) {
 }
 
 $originalFile.addEventListener("input", (event) => {
+
+  function arrayToStringCSV(array) {
+    const dataFinal = array
+        .map((linha) => linha.join(','))
+        .join(`\r\n`);
+    return dataFinal
+  }
+  
+  function DownloadCSV(fileName, array) {
+
+    const data = arrayToStringCSV(array)
+
+    const name = fileName.indexOf(`.json`) === -1 
+      ? `${fileName}.csv` 
+      : fileName.replace(`.json`, ".csv")
+
+    const ancor = document.createElement(`a`)
+    ancor.setAttribute("download", name);
+    ancor.setAttribute(
+      `href`,
+      `data:text/csv;encoding=utf8,${encodeURIComponent(data)}`
+    );
+
+    ancor.click();
+  }
+
   const files = event.target.files;
 
   [...files].forEach((file) => {
+    const fileName = file.name
 
-    $downloas_csv.setAttribute("download", file.name.replace(`.json`, ".csv"));
 
     readJson(file, (json) => {
-      // console.log(json);
 
       const extracaoInfosImportantes = json.reduce(
         (
           acc,
           {
             detalhesCliente: {
-              brisa_movel,
-              documento,
-              data_ativacao,
-              data_criacao,
-              data_nascimento,
-              identidade,
-              nome: nome_cliente,
-              telefone,
-              telefone2,
-              telefone3,
+              brisa_movel,documento,data_ativacao,data_criacao,identidade,nome: nome_cliente,telefone,telefone2,telefone3,
             },
             enderecos,
           }
         ) => {
           let data = {
-            brisa_movel,
-            documento,
-            data_ativacao,
-            data_criacao,
-            data_nascimento,
-            identidade,
-            nome_cliente,
-            telefone,
-            telefone2,
-            telefone3,
+            brisa_movel,documento,data_ativacao,data_criacao,identidade,nome_cliente,telefone,telefone2,telefone3,
           };
 
-          enderecos.map(
-            ({
-              bairro,
-              cep,
-              cidade_nome,
-              id: idEndereco,
-              latitude,
-              longitude,
-              logradouro,
-              numero,
-              ponto_referencia1,
-              ponto_referencia2,
-              uf,
+          enderecos.forEach(function ({
+              bairro,cep,cidade_nome,logradouro,numero,uf,
 
               cliente: {
-                ativo: cliente_ativo,
-                brisa_movel,
-                classificacao,
-                classificacao_valor,
-                data_criacao,
-                data_nascimento,
-                email,
-                email2,
-                grande_empresa,
+                ativo: cliente_ativo, brisa_movel, classificacao,classificacao_valor,data_criacao,data_nascimento,email,email2,grande_empresa,
               },
 
               contratos,
-            }) => {
+            }) {
+
               data = {
-                ...data,
-                bairro,
-                cep,
-                cidade_nome,
-                idEndereco,
-                latitude,
-                longitude,
-                logradouro,
-                numero,
-                ponto_referencia1,
-                ponto_referencia2,
-                uf,
-                cliente_ativo,
-                brisa_movel,
-                classificacao,
-                classificacao_valor,
-                data_criacao,
-                data_nascimento,
-                email,
-                email2,
-                grande_empresa,
+                ...data,bairro,cep,cidade_nome,logradouro,numero,uf,cliente_ativo,brisa_movel,classificacao,classificacao_valor,data_criacao,data_nascimento,email,email2,grande_empresa,
               };
 
-              contratos.map(
-                ({
-                  ativo: contrato_ativo,
-                  data_cancelado,
-                  data_contratacao,
-                  data_primeira_ativacao,
-                  id: idContrato,
-                  pessoa_juridica,
+              contratos.forEach( function ({
+                  ativo: contrato_ativo,data_cancelado,data_contratacao,data_primeira_ativacao,pessoa_juridica,
                   plano_principal: {
-                    categoria_tipo,
-                    nome: plano,
-                    radio,
-                    valor,
-                    valor_corporativo,
+                    categoria_tipo,nome: plano,radio,valor,valor_corporativo,
                   },
-                }) => {
+                }) {
                   data = {
-                    ...data,
-                    contrato_ativo,
-                    data_cancelado,
-                    data_contratacao,
-                    data_primeira_ativacao,
-                    idContrato,
-                    pessoa_juridica,
-                    categoria_tipo,
-                    plano,
-                    radio,
-                    valor,
-                    valor_corporativo,
+                    ...data,contrato_ativo,data_cancelado,data_contratacao,data_primeira_ativacao,pessoa_juridica,categoria_tipo,plano,radio,valor,valor_corporativo,
                   };
 
                   let newData = {};
@@ -155,29 +103,20 @@ $originalFile.addEventListener("input", (event) => {
         []
       );
 
-      // console.log(extracaoInfosImportantes);
+      const header = extracaoInfosImportantes.reduce((acc, infos) => {
+        const keys = Object.keys(infos)
+        const keysFaltantes = keys.filter(key => !acc.includes(key))
+        return acc = [ ...acc, ...keysFaltantes ]
+      }, [])
 
-      const header = Object.keys(extracaoInfosImportantes[0]);
+      const data = extracaoInfosImportantes.reduce((acc, contrato) => {
+        let arr = []
+        header.forEach(key => arr.push(contrato[key] || ""))
+        return acc = [ ...acc, arr ]
+      }, [header]);
 
-      let arr = [header];
+      DownloadCSV(fileName, data)
 
-      extracaoInfosImportantes.forEach((contrato) => {
-        const values = Object.values(contrato);
-        //   const header = arr[0];
-
-        arr.push(values);
-      });
-
-      const dataFinal = arr.map((linha) => linha.join()).join(`\n`);
-
-      $downloas_csv.setAttribute(
-        `href`,
-        `data:text/csv;encoding=utf8,${encodeURIComponent(dataFinal)}`
-      );
-
-      $downloas_csv.click();
-
-      console.log(dataFinal);
     });
   });
 });
